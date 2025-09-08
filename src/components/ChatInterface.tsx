@@ -1,0 +1,253 @@
+import { useState, useRef, useEffect } from "react";
+import { ChatSidebar } from "./ChatSidebar";
+import { ChatMessage } from "./ChatMessage";
+import { ChatInput } from "./ChatInput";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Message {
+  id: string;
+  content: string;
+  role: "user" | "assistant";
+  timestamp: string;
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  timestamp: string;
+  messages: Message[];
+}
+
+export function ChatInterface() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([
+    {
+      id: "1",
+      title: "React Best Practices",
+      timestamp: "2 hours ago",
+      messages: [
+        {
+          id: "1",
+          content: "What are some React best practices for 2024?",
+          role: "user",
+          timestamp: "2:30 PM"
+        },
+        {
+          id: "2",
+          content: "Here are some key React best practices for 2024:\n\n1. **Use React 18 features**: Leverage concurrent features like Suspense, useTransition, and useDeferredValue for better performance.\n\n2. **Component composition over inheritance**: Prefer composition patterns and custom hooks over class inheritance.\n\n3. **TypeScript integration**: Use TypeScript for better type safety and developer experience.\n\n4. **Performance optimization**: Implement React.memo, useMemo, and useCallback strategically, not everywhere.\n\n5. **Server Components**: Consider Next.js 13+ Server Components for better performance and SEO.\n\n6. **State management**: Use Zustand or Redux Toolkit for complex state, built-in hooks for simple state.\n\nWould you like me to elaborate on any of these points?",
+          role: "assistant",
+          timestamp: "2:31 PM"
+        }
+      ]
+    },
+    {
+      id: "2",
+      title: "Tailwind CSS Tips",
+      timestamp: "1 day ago",
+      messages: [
+        {
+          id: "3",
+          content: "How can I create a gradient background with Tailwind CSS?",
+          role: "user",
+          timestamp: "Yesterday"
+        },
+        {
+          id: "4",
+          content: "You can create gradient backgrounds in Tailwind CSS using the gradient utilities:\n\n```css\n/* Linear gradients */\nbg-gradient-to-r from-blue-500 to-purple-600\nbg-gradient-to-br from-pink-400 via-red-500 to-yellow-500\n\n/* Radial gradients */\nbg-gradient-radial from-white to-gray-300\n```\n\nFor custom gradients, you can extend your tailwind.config.js:\n\n```js\nmodule.exports = {\n  theme: {\n    extend: {\n      backgroundImage: {\n        'custom-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',\n      }\n    }\n  }\n}\n```",
+          role: "assistant",
+          timestamp: "Yesterday"
+        }
+      ]
+    },
+    {
+      id: "3",
+      title: "JavaScript Array Methods",
+      timestamp: "3 days ago",
+      messages: []
+    }
+  ]);
+  
+  const [activeConversationId, setActiveConversationId] = useState<string>("1");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const activeConversation = conversations.find(c => c.id === activeConversationId);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [activeConversation?.messages]);
+
+  const handleNewChat = () => {
+    const newId = (conversations.length + 1).toString();
+    const newConversation: Conversation = {
+      id: newId,
+      title: "New Chat",
+      timestamp: "Just now",
+      messages: []
+    };
+    
+    setConversations([newConversation, ...conversations]);
+    setActiveConversationId(newId);
+  };
+
+  const handleSendMessage = async (content: string) => {
+    if (!activeConversation) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content,
+      role: "user",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    // Update conversation with user message
+    setConversations(prev => 
+      prev.map(conv => 
+        conv.id === activeConversationId 
+          ? { 
+              ...conv, 
+              messages: [...conv.messages, userMessage],
+              title: conv.messages.length === 0 ? content.slice(0, 30) + "..." : conv.title
+            }
+          : conv
+      )
+    );
+
+    setIsLoading(true);
+
+    // Simulate AI response
+    setTimeout(() => {
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "I'm a demo ChatGPT interface! In a real implementation, this would connect to OpenAI's API to generate responses. Your message was: \"" + content + "\"",
+        role: "assistant",
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.id === activeConversationId 
+            ? { ...conv, messages: [...conv.messages, assistantMessage] }
+            : conv
+        )
+      );
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  const handleCopyMessage = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast({
+      title: "Copied to clipboard",
+      description: "Message content has been copied.",
+    });
+  };
+
+  const handleRegenerate = (messageId: string) => {
+    toast({
+      title: "Regenerating response",
+      description: "This feature would regenerate the AI response.",
+    });
+  };
+
+  const handleFeedback = (messageId: string, type: "up" | "down") => {
+    toast({
+      title: `Feedback ${type === "up" ? "👍" : "👎"}`,
+      description: "Thank you for your feedback!",
+    });
+  };
+
+  return (
+    <div className="flex h-screen bg-[hsl(var(--chat-bg))]">
+      {/* Sidebar */}
+      <ChatSidebar
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        onNewChat={handleNewChat}
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={setActiveConversationId}
+      />
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-background/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="bg-gradient-to-r from-primary/20 to-[hsl(var(--primary-glow))]/20 text-primary border-primary/30">
+              <Sparkles className="h-3 w-3 mr-1" />
+              GPT-4
+            </Badge>
+            <h1 className="font-medium">
+              {activeConversation?.title || "ChatGPT"}
+            </h1>
+          </div>
+        </div>
+
+        {/* Messages Area */}
+        <ScrollArea className="flex-1">
+          <div className="max-w-4xl mx-auto">
+            {activeConversation?.messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full min-h-[400px]">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary to-[hsl(var(--primary-glow))] rounded-2xl flex items-center justify-center mx-auto">
+                    <Sparkles className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-2xl font-semibold">How can I help you today?</h2>
+                  <p className="text-muted-foreground max-w-md">
+                    I'm your AI assistant. Ask me anything, and I'll do my best to help you with information, creative tasks, analysis, and more.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-4">
+                {activeConversation?.messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    onCopy={handleCopyMessage}
+                    onRegenerate={handleRegenerate}
+                    onFeedback={handleFeedback}
+                  />
+                ))}
+                {isLoading && (
+                  <div className="flex gap-4 p-6">
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-[hsl(var(--primary-glow))] flex items-center justify-center">
+                      <Sparkles className="h-4 w-4 text-primary-foreground animate-pulse" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="chat-message-assistant max-w-[70%] p-4">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {/* Input Area */}
+        <div className="max-w-4xl mx-auto w-full">
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
