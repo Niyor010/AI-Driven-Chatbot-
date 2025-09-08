@@ -2,9 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import { ChatSidebar } from "./ChatSidebar";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
+import { ProfileDropdown } from "./ProfileDropdown";
+import { NotificationCenter } from "./NotificationCenter";
+import { LanguageSelector } from "./LanguageSelector";
+import { VoiceControls } from "./VoiceControls";
+import { SettingsPanel } from "./SettingsPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, ArrowUpDown, MapPin, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Message {
@@ -72,6 +78,14 @@ export function ChatInterface() {
   
   const [activeConversationId, setActiveConversationId] = useState<string>("1");
   const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [reverseChat, setReverseChat] = useState(false);
+  const [uiLanguage, setUiLanguage] = useState("en");
+  const [responseLanguage, setResponseLanguage] = useState("en");
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [volume, setVolume] = useState(50);
+  const [location, setLocation] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -84,6 +98,27 @@ export function ChatInterface() {
   useEffect(() => {
     scrollToBottom();
   }, [activeConversation?.messages]);
+
+  // Location detection
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation(`${position.coords.latitude}, ${position.coords.longitude}`);
+        },
+        (error) => {
+          console.log("Location access denied");
+        }
+      );
+    }
+  }, []);
+
+  const handleLocationRequest = () => {
+    toast({
+      title: "Location Access",
+      description: "Allow ChatGPT to use your location for more accurate results?",
+    });
+  };
 
   const handleNewChat = () => {
     const newId = (conversations.length + 1).toString();
@@ -165,6 +200,26 @@ export function ChatInterface() {
     });
   };
 
+  const handleToggleListening = () => {
+    setIsListening(!isListening);
+    toast({
+      title: isListening ? "Voice input stopped" : "Voice input started",
+      description: isListening ? "Microphone turned off" : "Listening for your voice...",
+    });
+  };
+
+  const handleToggleSpeaking = () => {
+    setIsSpeaking(!isSpeaking);
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+  };
+
+  const displayedMessages = reverseChat 
+    ? [...(activeConversation?.messages || [])].reverse() 
+    : activeConversation?.messages || [];
+
   return (
     <div className="flex h-screen bg-[hsl(var(--chat-bg))]">
       {/* Sidebar */}
@@ -172,9 +227,7 @@ export function ChatInterface() {
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         onNewChat={handleNewChat}
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        onSelectConversation={setActiveConversationId}
+        onOpenSettings={() => setShowSettings(true)}
       />
 
       {/* Main Chat Area */}
@@ -189,6 +242,50 @@ export function ChatInterface() {
             <h1 className="font-medium">
               {activeConversation?.title || "ChatGPT"}
             </h1>
+            
+            {/* Chat Controls */}
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setReverseChat(!reverseChat)}
+                className={reverseChat ? "bg-primary/10 text-primary" : ""}
+              >
+                <ArrowUpDown className="h-4 w-4 mr-1" />
+                Latest First
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLocationRequest}
+                className={location ? "bg-primary/10 text-primary" : ""}
+              >
+                <MapPin className="h-4 w-4 mr-1" />
+                {location ? "Location On" : "Location"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side Controls */}
+          <div className="flex items-center gap-2">
+            <LanguageSelector
+              type="response"
+              selectedLanguage={responseLanguage}
+              onLanguageChange={setResponseLanguage}
+            />
+            
+            <VoiceControls
+              isListening={isListening}
+              isSpeaking={isSpeaking}
+              volume={volume}
+              onToggleListening={handleToggleListening}
+              onToggleSpeaking={handleToggleSpeaking}
+              onVolumeChange={handleVolumeChange}
+            />
+            
+            <NotificationCenter />
+            <ProfileDropdown />
           </div>
         </div>
 
@@ -209,7 +306,7 @@ export function ChatInterface() {
               </div>
             ) : (
               <div className="py-4">
-                {activeConversation?.messages.map((message) => (
+                {displayedMessages.map((message) => (
                   <ChatMessage
                     key={message.id}
                     message={message}
@@ -248,6 +345,12 @@ export function ChatInterface() {
           />
         </div>
       </div>
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </div>
   );
 }
