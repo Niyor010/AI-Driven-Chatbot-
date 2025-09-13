@@ -5,23 +5,73 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import SidebarLayout from "./components/SidebarLayout";
+import { ChatProvider, useChat } from "./contexts/ChatContext";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function AppContent() {
+  const { 
+    conversations, 
+    activeConversationId, 
+    isCollapsed, 
+    setIsCollapsed, 
+    addConversation, 
+    setActiveConversationId,
+    deleteConversation,
+    updateConversation
+  } = useChat();
+
+  const handleNewChat = () => {
+    const newId = (conversations.length + 1).toString();
+    const newConversation = {
+      id: newId,
+      title: "New Chat",
+      timestamp: "Just now",
+      messages: []
+    };
+    addConversation(newConversation);
+    setActiveConversationId(newId);
+  };
+
+  const handleRenameConversation = (id: string, newTitle: string) => {
+    updateConversation(id, { title: newTitle });
+  };
+
+  return (
+    <SidebarLayout 
+      isCollapsed={isCollapsed} 
+      onToggleCollapse={() => setIsCollapsed(!isCollapsed)} 
+      onNewChat={handleNewChat} 
+      onOpenSettings={() => {}}
+      conversations={conversations}
+      activeConversationId={activeConversationId}
+      onSelectConversation={setActiveConversationId}
+      onDeleteConversation={deleteConversation}
+      onRenameConversation={handleRenameConversation}
+    >
+      <Index />
+    </SidebarLayout>
+  );
+}
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ChatProvider>
+          <BrowserRouter>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              <Route path="/" element={<AppContent />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </ChatProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

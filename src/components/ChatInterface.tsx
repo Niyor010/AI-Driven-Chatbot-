@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { ChatSidebar } from "./ChatSidebar";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ProfileDropdown } from "./ProfileDropdown";
@@ -12,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ArrowUpDown, MapPin, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useChat } from "../contexts/ChatContext";
 
 interface Message {
   id: string;
@@ -20,63 +20,13 @@ interface Message {
   timestamp: string;
 }
 
-interface Conversation {
-  id: string;
-  title: string;
-  timestamp: string;
-  messages: Message[];
-}
-
 export function ChatInterface() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: "1",
-      title: "React Best Practices",
-      timestamp: "2 hours ago",
-      messages: [
-        {
-          id: "1",
-          content: "What are some React best practices for 2024?",
-          role: "user",
-          timestamp: "2:30 PM"
-        },
-        {
-          id: "2",
-          content: "Here are some key React best practices for 2024:\n\n1. **Use React 18 features**: Leverage concurrent features like Suspense, useTransition, and useDeferredValue for better performance.\n\n2. **Component composition over inheritance**: Prefer composition patterns and custom hooks over class inheritance.\n\n3. **TypeScript integration**: Use TypeScript for better type safety and developer experience.\n\n4. **Performance optimization**: Implement React.memo, useMemo, and useCallback strategically, not everywhere.\n\n5. **Server Components**: Consider Next.js 13+ Server Components for better performance and SEO.\n\n6. **State management**: Use Zustand or Redux Toolkit for complex state, built-in hooks for simple state.\n\nWould you like me to elaborate on any of these points?",
-          role: "assistant",
-          timestamp: "2:31 PM"
-        }
-      ]
-    },
-    {
-      id: "2",
-      title: "Tailwind CSS Tips",
-      timestamp: "1 day ago",
-      messages: [
-        {
-          id: "3",
-          content: "How can I create a gradient background with Tailwind CSS?",
-          role: "user",
-          timestamp: "Yesterday"
-        },
-        {
-          id: "4",
-          content: "You can create gradient backgrounds in Tailwind CSS using the gradient utilities:\n\n```css\n/* Linear gradients */\nbg-gradient-to-r from-blue-500 to-purple-600\nbg-gradient-to-br from-pink-400 via-red-500 to-yellow-500\n\n/* Radial gradients */\nbg-gradient-radial from-white to-gray-300\n```\n\nFor custom gradients, you can extend your tailwind.config.js:\n\n```js\nmodule.exports = {\n  theme: {\n    extend: {\n      backgroundImage: {\n        'custom-gradient': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',\n      }\n    }\n  }\n}\n```",
-          role: "assistant",
-          timestamp: "Yesterday"
-        }
-      ]
-    },
-    {
-      id: "3",
-      title: "JavaScript Array Methods",
-      timestamp: "3 days ago",
-      messages: []
-    }
-  ]);
-  
-  const [activeConversationId, setActiveConversationId] = useState<string>("1");
+  const { 
+    conversations, 
+    activeConversationId, 
+    addMessage, 
+    updateConversation 
+  } = useChat();
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [reverseChat, setReverseChat] = useState(false);
@@ -120,19 +70,6 @@ export function ChatInterface() {
     });
   };
 
-  const handleNewChat = () => {
-    const newId = (conversations.length + 1).toString();
-    const newConversation: Conversation = {
-      id: newId,
-      title: "New Chat",
-      timestamp: "Just now",
-      messages: []
-    };
-    
-    setConversations([newConversation, ...conversations]);
-    setActiveConversationId(newId);
-  };
-
   const handleSendMessage = async (content: string) => {
     if (!activeConversation) return;
 
@@ -143,18 +80,8 @@ export function ChatInterface() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    // Update conversation with user message
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === activeConversationId 
-          ? { 
-              ...conv, 
-              messages: [...conv.messages, userMessage],
-              title: conv.messages.length === 0 ? content.slice(0, 30) + "..." : conv.title
-            }
-          : conv
-      )
-    );
+    // Add user message
+    addMessage(activeConversationId, userMessage);
 
     setIsLoading(true);
 
@@ -167,13 +94,7 @@ export function ChatInterface() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      setConversations(prev => 
-        prev.map(conv => 
-          conv.id === activeConversationId 
-            ? { ...conv, messages: [...conv.messages, assistantMessage] }
-            : conv
-        )
-      );
+      addMessage(activeConversationId, assistantMessage);
       setIsLoading(false);
     }, 1500);
   };
@@ -222,14 +143,6 @@ export function ChatInterface() {
 
   return (
     <div className="flex h-screen bg-[hsl(var(--chat-bg))]">
-      {/* Sidebar */}
-      <ChatSidebar
-        isCollapsed={isCollapsed}
-        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-        onNewChat={handleNewChat}
-        onOpenSettings={() => setShowSettings(true)}
-      />
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}

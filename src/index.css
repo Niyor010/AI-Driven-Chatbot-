@@ -131,6 +131,32 @@ All colors MUST be HSL.
     @apply bg-gradient-to-b from-[hsl(var(--sidebar-bg))] to-[hsl(var(--sidebar-bg))] border-r border-[hsl(var(--sidebar-border))];
   }
   
+  /* Sidebar responsive utilities */
+  .sidebar-collapsed {
+    @apply w-16;
+  }
+  
+  .sidebar-expanded {
+    @apply w-80;
+  }
+  
+  .sidebar-mobile {
+    @apply w-80;
+  }
+  
+  /* Main content responsive margins */
+  .main-content-collapsed {
+    @apply ml-16;
+  }
+  
+  .main-content-expanded {
+    @apply ml-80;
+  }
+  
+  .main-content-mobile {
+    @apply ml-0;
+  }
+  
   .chat-message-user {
     @apply bg-gradient-to-br from-[hsl(var(--message-user))] to-[hsl(var(--primary-glow))] text-primary-foreground;
     box-shadow: var(--shadow-message), var(--shadow-glow);
