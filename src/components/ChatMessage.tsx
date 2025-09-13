@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "react-i18next";
 
 interface ChatMessageProps {
   message: {
@@ -13,15 +14,18 @@ interface ChatMessageProps {
   onCopy?: (content: string) => void;
   onRegenerate?: (messageId: string) => void;
   onFeedback?: (messageId: string, type: "up" | "down") => void;
+  onSpeak?: (content: string) => void;
 }
 
 export function ChatMessage({ 
   message, 
   onCopy, 
   onRegenerate, 
-  onFeedback 
+  onFeedback,
+  onSpeak
 }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const { t } = useTranslation();
 
   return (
     <div className={cn(
@@ -65,6 +69,7 @@ export function ChatMessage({
                 size="sm"
                 className="h-7 w-7 p-0 hover:bg-[hsl(var(--hover-overlay))]"
                 onClick={() => onCopy?.(message.content)}
+                title={t('chat.messageCopied')}
               >
                 <Copy className="h-3 w-3" />
               </Button>
@@ -72,7 +77,17 @@ export function ChatMessage({
                 variant="ghost"
                 size="sm"
                 className="h-7 w-7 p-0 hover:bg-[hsl(var(--hover-overlay))]"
+                onClick={() => onSpeak?.(message.content)}
+                title={t('chat.readAloud')}
+              >
+                <Volume2 className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-[hsl(var(--hover-overlay))]"
                 onClick={() => onFeedback?.(message.id, "up")}
+                title={t('chat.feedback')}
               >
                 <ThumbsUp className="h-3 w-3" />
               </Button>
@@ -81,6 +96,7 @@ export function ChatMessage({
                 size="sm"
                 className="h-7 w-7 p-0 hover:bg-[hsl(var(--hover-overlay))]"
                 onClick={() => onFeedback?.(message.id, "down")}
+                title={t('chat.feedback')}
               >
                 <ThumbsDown className="h-3 w-3" />
               </Button>
@@ -89,6 +105,7 @@ export function ChatMessage({
                 size="sm"
                 className="h-7 w-7 p-0 hover:bg-[hsl(var(--hover-overlay))]"
                 onClick={() => onRegenerate?.(message.id)}
+                title={t('chat.regeneratingResponse')}
               >
                 <RotateCcw className="h-3 w-3" />
               </Button>

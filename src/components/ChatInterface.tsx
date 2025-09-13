@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ProfileDropdown } from "./ProfileDropdown";
@@ -21,6 +22,7 @@ interface Message {
 }
 
 export function ChatInterface() {
+  const { t, i18n } = useTranslation();
   const { 
     conversations, 
     activeConversationId, 
@@ -45,6 +47,11 @@ export function ChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleLanguageChange = (language: string) => {
+    i18n.changeLanguage(language);
+    setUiLanguage(language);
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [activeConversation?.messages]);
@@ -65,8 +72,8 @@ export function ChatInterface() {
 
   const handleLocationRequest = () => {
     toast({
-      title: "Location Access",
-      description: "Allow ChatGPT to use your location for more accurate results?",
+      title: t('chat.locationAccess'),
+      description: t('chat.locationDescription'),
     });
   };
 
@@ -89,7 +96,7 @@ export function ChatInterface() {
     setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm a demo ChatGPT interface! In a real implementation, this would connect to OpenAI's API to generate responses. Your message was: \"" + content + "\"",
+        content: t('chat.demoResponse', { message: content }),
         role: "assistant",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -102,35 +109,47 @@ export function ChatInterface() {
   const handleCopyMessage = (content: string) => {
     navigator.clipboard.writeText(content);
     toast({
-      title: "Copied to clipboard",
-      description: "Message content has been copied.",
+      title: t('chat.copiedToClipboard'),
+      description: t('chat.messageCopied'),
     });
   };
 
   const handleRegenerate = (messageId: string) => {
     toast({
-      title: "Regenerating response",
-      description: "This feature would regenerate the AI response.",
+      title: t('chat.regeneratingResponse'),
+      description: t('chat.regenerateDescription'),
     });
   };
 
   const handleFeedback = (messageId: string, type: "up" | "down") => {
     toast({
-      title: `Feedback ${type === "up" ? "👍" : "👎"}`,
-      description: "Thank you for your feedback!",
+      title: `${t('chat.feedback')} ${type === "up" ? "👍" : "👎"}`,
+      description: t('chat.thankYouFeedback'),
     });
   };
 
   const handleToggleListening = () => {
     setIsListening(!isListening);
     toast({
-      title: isListening ? "Voice input stopped" : "Voice input started",
-      description: isListening ? "Microphone turned off" : "Listening for your voice...",
+      title: isListening ? t('chat.voiceInputStopped') : t('chat.voiceInputStarted'),
+      description: isListening ? t('chat.microphoneOff') : t('chat.listening'),
     });
   };
 
   const handleToggleSpeaking = () => {
     setIsSpeaking(!isSpeaking);
+  };
+
+  const handleTranscript = (transcript: string) => {
+    // Auto-send the transcribed message
+    if (transcript.trim()) {
+      handleSendMessage(transcript.trim());
+    }
+  };
+
+  const handleSpeak = (text: string) => {
+    // This will be handled by the VoiceControls component
+    console.log('Speaking:', text);
   };
 
   const handleVolumeChange = (newVolume: number) => {
@@ -150,10 +169,10 @@ export function ChatInterface() {
           <div className="flex items-center gap-3">
             <Badge variant="secondary" className="bg-gradient-to-r from-primary/20 to-[hsl(var(--primary-glow))]/20 text-primary border-primary/30">
               <Sparkles className="h-3 w-3 mr-1" />
-              GPT-4
+              {t('chat.gpt4')}
             </Badge>
             <h1 className="font-medium">
-              {activeConversation?.title || "ChatGPT"}
+              {activeConversation?.title || t('chat.title')}
             </h1>
             
             {/* Chat Controls */}
@@ -165,7 +184,7 @@ export function ChatInterface() {
                 className={reverseChat ? "bg-primary/10 text-primary" : ""}
               >
                 <ArrowUpDown className="h-4 w-4 mr-1" />
-                Latest First
+                {t('chat.latestFirst')}
               </Button>
               
               <Button
@@ -175,13 +194,19 @@ export function ChatInterface() {
                 className={location ? "bg-primary/10 text-primary" : ""}
               >
                 <MapPin className="h-4 w-4 mr-1" />
-                {location ? "Location On" : "Location"}
+                {location ? t('chat.locationOn') : t('chat.location')}
               </Button>
             </div>
           </div>
 
           {/* Right Side Controls */}
           <div className="flex items-center gap-2">
+            <LanguageSelector
+              type="ui"
+              selectedLanguage={uiLanguage}
+              onLanguageChange={handleLanguageChange}
+            />
+            
             <LanguageSelector
               type="response"
               selectedLanguage={responseLanguage}
@@ -195,6 +220,9 @@ export function ChatInterface() {
               onToggleListening={handleToggleListening}
               onToggleSpeaking={handleToggleSpeaking}
               onVolumeChange={handleVolumeChange}
+              onTranscript={handleTranscript}
+              onSpeak={handleSpeak}
+              language={responseLanguage}
             />
             
             <NotificationCenter />
@@ -211,9 +239,9 @@ export function ChatInterface() {
                   <div className="w-16 h-16 bg-gradient-to-br from-primary to-[hsl(var(--primary-glow))] rounded-2xl flex items-center justify-center mx-auto">
                     <Sparkles className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  <h2 className="text-2xl font-semibold">How can I help you today?</h2>
+                  <h2 className="text-2xl font-semibold">{t('chat.howCanIHelp')}</h2>
                   <p className="text-muted-foreground max-w-md">
-                    I'm your AI assistant. Ask me anything, and I'll do my best to help you with information, creative tasks, analysis, and more.
+                    {t('chat.welcomeMessage')}
                   </p>
                 </div>
               </div>
@@ -226,6 +254,7 @@ export function ChatInterface() {
                     onCopy={handleCopyMessage}
                     onRegenerate={handleRegenerate}
                     onFeedback={handleFeedback}
+                    onSpeak={handleSpeak}
                   />
                 ))}
                 {isLoading && (

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export default function Sidebar({
   onDeleteConversation,
   onRenameConversation
 }: SidebarProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -133,8 +135,8 @@ export default function Sidebar({
             </div>
             {isHovering && (
               <div>
-                <span className="font-semibold text-lg">ChatGPT</span>
-                <p className="text-xs text-muted-foreground">AI Assistant</p>
+                <span className="font-semibold text-lg">{t('sidebar.title')}</span>
+                <p className="text-xs text-muted-foreground">{t('sidebar.subtitle')}</p>
               </div>
             )}
           </div>
@@ -163,7 +165,7 @@ export default function Sidebar({
             size="sm"
           >
             <Plus className="h-4 w-4" />
-            {isHovering && "New Chat"}
+            {isHovering && t('sidebar.newChat')}
           </Button>
         </div>
 
@@ -173,7 +175,7 @@ export default function Sidebar({
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search conversations..."
+                placeholder={t('sidebar.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-9 text-sm"
@@ -262,8 +264,8 @@ export default function Sidebar({
                   ) : isHovering && (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <Search className="h-8 w-8 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">No conversations found</p>
-                      <p className="text-xs text-muted-foreground mt-1">Try a different search term</p>
+                      <p className="text-sm text-muted-foreground">{t('sidebar.noConversationsFound')}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('sidebar.tryDifferentSearch')}</p>
                     </div>
                   )}
                 </div>
@@ -284,7 +286,7 @@ export default function Sidebar({
             size="sm"
           >
             <Settings className="h-4 w-4" />
-            {isHovering && "Settings"}
+            {isHovering && t('sidebar.settings')}
           </Button>
         </div>
       </div>
